@@ -115,38 +115,65 @@ func (s *Service) GetLongURL(shortCode string) (longURL string, err error) {
 	}
 }
 
-// validateURL valida que la URL sea válida y no esté vacía usando validación temprana
-func (s *Service) validateURL(longURL string) error {
-	// Validación temprana: verificar string vacío
+// validateURL valida que la URL sea válida usando named return values y validaciones múltiples
+func (s *Service) validateURL(longURL string) (err error) {
+	// Validaciones múltiples usando funciones variádicas
+	if err = s.validateURLBasics(longURL); err != nil {
+		return err
+	}
+
+	if err = s.validateURLFormat(longURL); err != nil {
+		return err
+	}
+
+	if err = s.validateURLSecurity(longURL); err != nil {
+		return err
+	}
+
+	return nil // Named return value
+}
+
+// validateURLBasics realiza validaciones básicas
+func (s *Service) validateURLBasics(longURL string) error {
 	if longURL == "" {
 		return &ValidationError{Field: "long_url", Value: longURL, Msg: "no puede estar vacía"}
 	}
 
-	// Validación temprana: verificar solo espacios
-	trimmedURL := strings.TrimSpace(longURL)
-	if trimmedURL == "" {
+	if strings.TrimSpace(longURL) == "" {
 		return &ValidationError{Field: "long_url", Value: longURL, Msg: "no puede contener solo espacios"}
 	}
 
-	// Validación temprana: longitud mínima razonable
-	if len(trimmedURL) < 7 { // http:// mínimo
-		return &ValidationError{Field: "long_url", Value: longURL, Msg: "demasiado corta para ser una URL válida"}
-	}
+	return nil
+}
 
-	// Validar formato de URL
-	parsedURL, err := url.Parse(trimmedURL)
+// validateURLFormat valida el formato de la URL
+func (s *Service) validateURLFormat(longURL string) error {
+	parsedURL, err := url.Parse(longURL)
 	if err != nil {
-		return &ValidationError{Field: "long_url", Value: longURL, Msg: fmt.Sprintf("formato inválido: %v", err)}
+		return &ValidationError{Field: "long_url", Value: longURL, Msg: "formato inválido"}
 	}
 
-	// Verificar que tenga esquema válido
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return &ValidationError{Field: "long_url", Value: longURL, Msg: "debe usar esquema http o https"}
 	}
 
-	// Verificar que tenga host
 	if parsedURL.Host == "" {
 		return &ValidationError{Field: "long_url", Value: longURL, Msg: "debe tener un host válido"}
+	}
+
+	return nil
+}
+
+// validateURLSecurity realiza validaciones de seguridad
+func (s *Service) validateURLSecurity(longURL string) error {
+	// Lista de dominios bloqueados (ejemplo de validación de seguridad)
+	blockedDomains := []string{"malware.com", "phishing.net", "spam.org"}
+	
+	parsedURL, _ := url.Parse(longURL)
+	for _, blocked := range blockedDomains {
+		if strings.Contains(parsedURL.Host, blocked) {
+			return &ValidationError{Field: "long_url", Value: longURL, Msg: "dominio bloqueado por seguridad"}
+		}
 	}
 
 	return nil
@@ -186,45 +213,46 @@ func (s *Service) generateUniqueShortCode(longURL string) (string, error) {
 	return "", ErrMaxRetries
 }
 
-// generateShortCode genera un código corto usando tiempo, aleatoriedad y hash
+// generateShortCode genera un código corto usando closure para entrada única
 func (s *Service) generateShortCode(longURL string, attempt int) string {
-	// Combinar tiempo actual, URL y número de intento para mayor unicidad
-	timestamp := time.Now().UnixNano()
-	randomNum := s.rand.Int63()
-
-	// Crear string base para el hash
-	baseString := fmt.Sprintf("%s-%d-%d-%d", longURL, timestamp, randomNum, attempt)
-
+	// Usar closure para generar entrada única
+	entryGenerator := s.createEntryGenerator(longURL, attempt)
+	entry := entryGenerator()
+	
 	// Generar hash MD5
-	hasher := md5.New()
-	hasher.Write([]byte(baseString))
-	hash := hex.EncodeToString(hasher.Sum(nil))
-
-	// Extraer caracteres válidos del hash y crear código corto
-	return s.extractValidChars(hash, ShortCodeLength)
+	hash := md5.Sum([]byte(entry))
+	hashString := hex.EncodeToString(hash[:])
+	
+	// Tomar los primeros caracteres y convertir a base alfanumérica
+	result := make([]byte, ShortCodeLength)
+	for i := 0; i < ShortCodeLength; i++ {
+		index := int(hashString[i]) % len(ValidChars)
+		result[i] = ValidChars[index]
+	}
+	
+	return string(result)
 }
 
-// extractValidChars extrae caracteres alfanuméricos válidos del hash usando strings.Builder para mejor performance
-func (s *Service) extractValidChars(hash string, length int) string {
-	var result strings.Builder
-	// Preasignar capacidad para evitar realocaciones (mejora de performance de la Guía 1)
-	result.Grow(length)
-	validCharsLen := len(ValidChars)
+// createEntryGenerator crea un closure para generar entradas únicas
+func (s *Service) createEntryGenerator(longURL string, attempt int) func() string {
+	// Variables capturadas por el closure
+	timestamp := time.Now().UnixNano()
+	randomValue := s.rand.Int63()
 	
-	// Extraer caracteres del hash primero
-	for i := 0; i < len(hash) && result.Len() < length; i++ {
-		// Usar el valor del byte para seleccionar un carácter válido
-		charIndex := int(hash[i]) % validCharsLen
-		result.WriteByte(ValidChars[charIndex])
+	return func() string {
+		var builder strings.Builder
+		builder.Grow(len(longURL) + 50) // Pre-allocar para mejor performance
+		
+		builder.WriteString(longURL)
+		builder.WriteString("_")
+		builder.WriteString(fmt.Sprintf("%d", timestamp))
+		builder.WriteString("_")
+		builder.WriteString(fmt.Sprintf("%d", attempt))
+		builder.WriteString("_")
+		builder.WriteString(fmt.Sprintf("%d", randomValue))
+		
+		return builder.String()
 	}
-	
-	// Si no tenemos suficientes caracteres, completar con aleatorios
-	for result.Len() < length {
-		charIndex := s.rand.Intn(validCharsLen)
-		result.WriteByte(ValidChars[charIndex])
-	}
-	
-	return result.String()
 }
 
 // GetStats retorna estadísticas del servicio

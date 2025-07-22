@@ -24,9 +24,9 @@ func NewHandler(service *shortener.Service) *Handler {
 	}
 }
 
-// ShortenRequest representa la petición para acortar una URL
+// ShortenRequest representa la petición para acortar una URL con validaciones
 type ShortenRequest struct {
-	LongURL string `json:"long_url"`
+	LongURL string `json:"long_url" validate:"required,url" example:"https://www.example.com"`
 }
 
 // ShortenResponse representa la respuesta con la URL acortada
@@ -37,8 +37,10 @@ type ShortenResponse struct {
 // ErrorResponse representa una respuesta de error
 type ErrorResponse struct {
 	Error   string `json:"error"`
-	Message string `json:"message,omitempty"`
+	Message string `json:"message"`
 }
+
+
 
 // ShortenURL maneja las peticiones POST /shorten con validación temprana
 func (h *Handler) ShortenURL(w http.ResponseWriter, r *http.Request) {
@@ -164,53 +166,14 @@ func (h *Handler) getBaseURL(r *http.Request) string {
 	return fmt.Sprintf("%s://%s", scheme, host)
 }
 
-// sendErrorResponse envía una respuesta de error en formato JSON con patrones idiomáticos
+// sendErrorResponse envía una respuesta de error en formato JSON
 func (h *Handler) sendErrorResponse(w http.ResponseWriter, statusCode int, errorCode, message string) {
-	// Defer para logging y cleanup siguiendo la Guía 2
-	defer func() {
-		if r := recover(); r != nil {
-			// Si hay panic al enviar error, escribir respuesta mínima
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(`{"error":"critical_error","message":"Error crítico del sistema"}`))
-		}
-	}()
-
-	// Map de headers con range idiomático
-	headers := map[string]string{
-		"Content-Type":           "application/json",
-		"X-Content-Type-Options": "nosniff",
-		"X-Frame-Options":        "DENY",
-	}
-
-	// Aplicar headers con range idiomático
-	for key, value := range headers {
-		w.Header().Set(key, value)
-	}
-
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	
-	// Switch idiomático para diferentes tipos de respuesta
-	switch {
-	case statusCode >= 500:
-		// Errores del servidor - respuesta detallada
-		errorResponse := ErrorResponse{
-			Error:   errorCode,
-			Message: fmt.Sprintf("%s (código: %d)", message, statusCode),
-		}
-		json.NewEncoder(w).Encode(errorResponse)
-	case statusCode >= 400:
-		// Errores del cliente - respuesta estándar
-		errorResponse := ErrorResponse{
-			Error:   errorCode,
-			Message: message,
-		}
-		json.NewEncoder(w).Encode(errorResponse)
-	default:
-		// Otros casos - respuesta mínima
-		errorResponse := ErrorResponse{
-			Error:   errorCode,
-			Message: message,
-		}
-		json.NewEncoder(w).Encode(errorResponse)
+	errorResponse := ErrorResponse{
+		Error:   errorCode,
+		Message: message,
 	}
+	json.NewEncoder(w).Encode(errorResponse)
 }

@@ -1,0 +1,664 @@
+{
+	"info": {
+		"_postman_id": "acortador-urls-collection",
+		"name": "Acortador de URLs - Reto 05",
+		"description": "Colección completa para probar el acortador de URLs inteligente y resistente desarrollado en Go",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Acortar URL - GitHub",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has short_url\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('short_url');",
+							"    pm.globals.set('short_url_github', jsonData.short_url);",
+							"    ",
+							"    // Extraer el código corto para usar en redirección",
+							"    var shortCode = jsonData.short_url.split('/').pop();",
+							"    pm.globals.set('short_code_github', shortCode);",
+							"});",
+							"",
+							"pm.test(\"Short URL format is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.short_url).to.match(/^http:\\/\\/localhost:8080\\/[a-zA-Z0-9]{6}$/);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"https://github.com/golang/go\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2. Acortar URL - Stack Overflow",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has short_url\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('short_url');",
+							"    pm.globals.set('short_url_stackoverflow', jsonData.short_url);",
+							"    ",
+							"    var shortCode = jsonData.short_url.split('/').pop();",
+							"    pm.globals.set('short_code_stackoverflow', shortCode);",
+							"});",
+							"",
+							"pm.test(\"Short code is 6 characters\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    var shortCode = jsonData.short_url.split('/').pop();",
+							"    pm.expect(shortCode).to.have.lengthOf(6);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"https://stackoverflow.com/questions/tagged/golang\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3. Acortar URL - YouTube",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has short_url\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('short_url');",
+							"    pm.globals.set('short_url_youtube', jsonData.short_url);",
+							"    ",
+							"    var shortCode = jsonData.short_url.split('/').pop();",
+							"    pm.globals.set('short_code_youtube', shortCode);",
+							"});",
+							"",
+							"pm.test(\"Different URLs generate different codes\", function () {",
+							"    var currentShortCode = pm.response.json().short_url.split('/').pop();",
+							"    var githubShortCode = pm.globals.get('short_code_github');",
+							"    var stackoverflowShortCode = pm.globals.get('short_code_stackoverflow');",
+							"    ",
+							"    if (githubShortCode) {",
+							"        pm.expect(currentShortCode).to.not.equal(githubShortCode);",
+							"    }",
+							"    if (stackoverflowShortCode) {",
+							"        pm.expect(currentShortCode).to.not.equal(stackoverflowShortCode);",
+							"    }",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"https://www.youtube.com/watch?v=YS4e4q9oBaU\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4. Redirección - GitHub",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 307 Temporary Redirect\", function () {",
+							"    pm.response.to.have.status(307);",
+							"});",
+							"",
+							"pm.test(\"Location header is present\", function () {",
+							"    pm.expect(pm.response.headers.get('Location')).to.equal('https://github.com/golang/go');",
+							"});",
+							"",
+							"pm.test(\"Response time is acceptable\", function () {",
+							"    pm.expect(pm.response.responseTime).to.be.below(100);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/{{short_code_github}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"{{short_code_github}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5. Redirección - Stack Overflow",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 307 Temporary Redirect\", function () {",
+							"    pm.response.to.have.status(307);",
+							"});",
+							"",
+							"pm.test(\"Location header is correct\", function () {",
+							"    pm.expect(pm.response.headers.get('Location')).to.equal('https://stackoverflow.com/questions/tagged/golang');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/{{short_code_stackoverflow}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"{{short_code_stackoverflow}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6. Redirección - YouTube",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 307 Temporary Redirect\", function () {",
+							"    pm.response.to.have.status(307);",
+							"});",
+							"",
+							"pm.test(\"Location header is correct\", function () {",
+							"    pm.expect(pm.response.headers.get('Location')).to.equal('https://www.youtube.com/watch?v=YS4e4q9oBaU');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/{{short_code_youtube}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"{{short_code_youtube}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "7. Error - URL Vacía",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error response format\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData).to.have.property('message');",
+							"});",
+							"",
+							"pm.test(\"Error code is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.equal('empty_url');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "8. Error - URL Inválida",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error response format\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData).to.have.property('message');",
+							"});",
+							"",
+							"pm.test(\"Error code is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.equal('invalid_url');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"not-a-valid-url\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "9. Error - Código No Encontrado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 404 Not Found\", function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"",
+							"pm.test(\"Error response format\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData).to.have.property('message');",
+							"});",
+							"",
+							"pm.test(\"Error code is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.equal('not_found');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/NOEXIST",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"NOEXIST"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "10. Error - Content-Type Incorrecto",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Error response format\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('error');",
+							"    pm.expect(jsonData).to.have.property('message');",
+							"});",
+							"",
+							"pm.test(\"Error code is correct\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.equal('invalid_content_type');",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "text/plain"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"https://www.google.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "11. Prueba de Unicidad - Misma URL",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Same URL generates different short codes\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    var currentShortCode = jsonData.short_url.split('/').pop();",
+							"    var githubShortCode = pm.globals.get('short_code_github');",
+							"    ",
+							"    // Aunque sea la misma URL, debe generar un código diferente",
+							"    // porque incluye timestamp y random en la generación",
+							"    pm.expect(currentShortCode).to.not.equal(githubShortCode);",
+							"    pm.expect(currentShortCode).to.have.lengthOf(6);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"https://github.com/golang/go\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "12. Prueba con URL Larga Compleja",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Complex URL handled correctly\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property('short_url');",
+							"    ",
+							"    var shortCode = jsonData.short_url.split('/').pop();",
+							"    pm.expect(shortCode).to.have.lengthOf(6);",
+							"    pm.expect(shortCode).to.match(/^[a-zA-Z0-9]{6}$/);",
+							"    ",
+							"    pm.globals.set('short_code_complex', shortCode);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"long_url\": \"https://docs.google.com/document/d/1234567890abcdef/edit?usp=sharing&tab=t.0#heading=h.abc123def456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/shorten",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"shorten"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "13. Redirección - URL Compleja",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 307 Temporary Redirect\", function () {",
+							"    pm.response.to.have.status(307);",
+							"});",
+							"",
+							"pm.test(\"Complex URL redirected correctly\", function () {",
+							"    var expectedUrl = 'https://docs.google.com/document/d/1234567890abcdef/edit?usp=sharing&tab=t.0#heading=h.abc123def456';",
+							"    pm.expect(pm.response.headers.get('Location')).to.equal(expectedUrl);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/{{short_code_complex}}",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"{{short_code_complex}}"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}

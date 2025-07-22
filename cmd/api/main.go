@@ -33,7 +33,7 @@ func main() {
 	// Puerto del servidor
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8089"
 	}
 
 	log.Printf("Servidor iniciado en puerto %s", port)
